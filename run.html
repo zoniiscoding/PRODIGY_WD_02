@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Tic-Tac-Toe</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0;
+      color: white;
+      flex-direction: column;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 0px 4px 10px rgba(0,0,0,0.4);
+    }
+
+    .game-container {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 8px;
+      margin: 20px 0;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .cell:hover {
+      background: rgba(255,255,255,0.3);
+      transform: scale(1.1);
+      box-shadow: 0px 0px 15px rgba(255,255,255,0.8);
+    }
+
+    .cell.taken {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .status {
+      font-size: 1.3rem;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .scoreboard {
+      margin: 15px 0;
+      display: flex;
+      gap: 20px;
+      font-size: 1.2rem;
+    }
+
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 25px;
+      background: #ff6a00;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #ff9a3c;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic-Tac-Toe 🎮</h1>
+  <div class="scoreboard">
+    <div>X Wins: <span id="x-score">0</span></div>
+    <div>O Wins: <span id="o-score">0</span></div>
+    <div>Draws: <span id="draw-score">0</span></div>
+  </div>
+  <div class="status" id="status">Choose Mode: Player vs Player or Player vs AI</div>
+  
+  <button onclick="setMode('pvp')">👥 Player vs Player</button>
+  <button onclick="setMode('ai')">🤖 Player vs AI</button>
+  
+  <div class="game-container" id="board"></div>
+  <button onclick="resetGame()">🔄 Reset</button>
+
+  <script>
+    const boardEl = document.getElementById("board");
+    const statusEl = document.getElementById("status");
+    const xScoreEl = document.getElementById("x-score");
+    const oScoreEl = document.getElementById("o-score");
+    const drawScoreEl = document.getElementById("draw-score");
+
+    let board, currentPlayer, gameActive, mode;
+    let xScore = 0, oScore = 0, drawScore = 0;
+
+    function setMode(selectedMode) {
+      mode = selectedMode;
+      resetGame();
+      statusEl.textContent = mode === "pvp" ? "Player X's turn" : "Your turn (X)";
+    }
+
+    function initBoard() {
+      board = Array(9).fill("");
+      boardEl.innerHTML = "";
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.addEventListener("click", handleCellClick);
+        boardEl.appendChild(cell);
+      }
+    }
+
+    function handleCellClick(e) {
+      const index = e.target.dataset.index;
+      if (board[index] || !gameActive) return;
+
+      makeMove(index, currentPlayer);
+
+      if (mode === "ai" && gameActive && currentPlayer === "O") {
+        setTimeout(aiMove, 500); 
+      }
+    }
+
+    function makeMove(index, player) {
+      board[index] = player;
+      const cell = boardEl.querySelector(`[data-index='${index}']`);
+      cell.textContent = player;
+      cell.classList.add("taken");
+
+      if (checkWinner(player)) {
+        statusEl.textContent = `🎉 ${player} Wins!`;
+        gameActive = false;
+        if (player === "X") xScoreEl.textContent = ++xScore;
+        else oScoreEl.textContent = ++oScore;
+        return;
+      }
+
+      if (!board.includes("")) {
+        statusEl.textContent = "It's a Draw! 🤝";
+        gameActive = false;
+        drawScoreEl.textContent = ++drawScore;
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      statusEl.textContent = mode === "pvp"
+        ? `Player ${currentPlayer}'s turn`
+        : (currentPlayer === "X" ? "Your turn (X)" : "AI's turn (O)");
+    }
+
+    function aiMove() {
+      let emptyIndices = board.map((val, idx) => val === "" ? idx : null).filter(v => v !== null);
+      let randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      makeMove(randomIndex, "O");
+    }
+
+    function checkWinner(player) {
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return wins.some(combo => combo.every(idx => board[idx] === player));
+    }
+
+    function resetGame() {
+      initBoard();
+      currentPlayer = "X";
+      gameActive = true;
+      if (!mode) {
+        statusEl.textContent = "Choose Mode: Player vs Player or Player vs AI";
+      } else {
+        statusEl.textContent = mode === "pvp" ? "Player X's turn" : "Your turn (X)";
+      }
+    }
+
+    resetGame();
+  </script>
+</body>
+</html>
